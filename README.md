@@ -26,3 +26,12 @@ Tabeller: `profiler` (navn, rolle, aktiv) og `stemplinger` (inn, ut, kommentar, 
 ## Excel / Fiken
 Oversikt → «Last ned Excel» gir to ark: *Sammendrag* (timer per ansatt) og *Stemplinger* (alle rader).
 Fiken-integrasjon kan senere bygges som en Supabase Edge Function som leser de samme tabellene.
+
+## Publisere på Cloudflare
+Appen ligger på https://timer.greknuts.workers.dev (Cloudflare Workers, statiske filer).
+Publiser en ny versjon fra denne mappen med:
+```
+npx wrangler@4 deploy
+```
+`wrangler.jsonc` og `.assetsignore` sørger for at bare `index.html` legges ut.
+Husk å legge adressen inn i Supabase under Site URL / Redirect URLs.

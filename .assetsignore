@@ -1,0 +1,8 @@
+# Bare index.html skal ut på nett
+.git
+.gitignore
+.assetsignore
+.wrangler
+supabase
+README.md
+wrangler.jsonc
