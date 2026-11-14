@@ -3,13 +3,9 @@
 Hele appen er én fil: `index.html`. Ingen byggesteg, ingen npm.
 Databasen er Supabase-prosjektet «Timer» (`fvefrpvybfrjlocukzxz`).
 
-## Publisere med GitHub Pages
-1. Last opp `index.html` (og gjerne `supabase/`-mappen og denne README) til et GitHub-repo.
-2. I repoet: **Settings → Pages → Build and deployment → Source: Deploy from a branch**, velg `main` og `/ (root)`.
-3. Etter et minutt ligger appen på `https://<brukernavn>.github.io/<repo>/`.
-4. I Supabase: **Authentication → URL Configuration**
-   - Site URL: `https://<brukernavn>.github.io/<repo>/`
-   - Redirect URLs: legg til samme adresse (og `http://localhost:5175` om du vil teste lokalt).
+**Adresse:** https://timer.rettilomma.com (Cloudflare, se nederst). GitHub-repoet er bare kildekode.
+
+Supabase → **Authentication → URL Configuration**: Site URL og Redirect URLs = `https://timer.rettilomma.com`.
 
 ## Roller
 - **Ansatt**: oppretter konto selv, må aktiveres av admin. Stempler inn/ut, ser og retter egne føringer.
