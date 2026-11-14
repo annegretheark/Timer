@@ -28,7 +28,7 @@ Oversikt → «Last ned Excel» gir to ark: *Sammendrag* (timer per ansatt) og *
 Fiken-integrasjon kan senere bygges som en Supabase Edge Function som leser de samme tabellene.
 
 ## Publisere på Cloudflare
-Appen ligger på https://timer.greknuts.workers.dev (Cloudflare Workers, statiske filer).
+Appen ligger på https://timer.rettilomma.com (Cloudflare Workers, statiske filer, eget domene).
 Publiser en ny versjon fra denne mappen med:
 ```
 npx wrangler@4 deploy

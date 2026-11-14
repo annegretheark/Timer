@@ -2,5 +2,6 @@
   // Cloudflare: publiseres med `npx wrangler@4 deploy`
   "name": "timer",
   "compatibility_date": "2026-11-13",
-  "assets": { "directory": "." }
+  "assets": { "directory": "." },
+  "routes": [{ "pattern": "timer.rettilomma.com", "custom_domain": true }]
 }
