@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tidregistrering</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏱</text></svg>" />
+<style>
+:root {
+  --bg: #f4f5f7; --kort: #ffffff; --tekst: #1f2328; --dempet: #656d76; --kant: #d8dee4;
+  --primaer: #2563eb; --inn: #16a34a; --ut: #dc2626; --fare: #b91c1c;
+  --info-bg: #eff6ff; --merke-bg: #fef3c7; --merke-tekst: #92400e;
+  color-scheme: light;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--tekst); background: var(--bg);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117; --kort: #161b22; --tekst: #e6edf3; --dempet: #8b949e; --kant: #30363d;
+    --primaer: #3b82f6; --info-bg: #172554; --merke-bg: #422006; --merke-tekst: #fcd34d;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); }
+h1, h2 { margin: 0; }
+h1 { font-size: 1.3rem; }
+h2 { font-size: 1.1rem; }
+small { color: var(--dempet); font-weight: normal; }
+button, input, select { font: inherit; color: inherit; border: 1px solid var(--kant); background: var(--kort); border-radius: 6px; padding: 0.45rem 0.75rem; }
+button { cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--dempet); }
+button:disabled { opacity: 0.5; cursor: default; }
+button.primaer { background: var(--primaer); border-color: var(--primaer); color: #fff; }
+button.fare { color: var(--fare); border-color: var(--fare); }
+button.lenke { border: none; background: none; color: var(--primaer); padding: 0.25rem; }
+label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; color: var(--dempet); }
+label input, label select { color: var(--tekst); }
+.sentrert { min-height: 100vh; display: grid; place-items: center; padding: 1rem; }
+.kort { background: var(--kort); border: 1px solid var(--kant); border-radius: 10px; padding: 1.25rem; }
+.stack { display: flex; flex-direction: column; gap: 1rem; }
+.feil { color: var(--ut); margin: 0.5rem 0; }
+.info { background: var(--info-bg); padding: 0.5rem 0.75rem; border-radius: 6px; margin: 0.75rem 0 0; }
+.hjelp { color: var(--dempet); }
+.tom { color: var(--dempet); text-align: center; padding: 1rem; }
+.tall { font-variant-numeric: tabular-nums; }
+.login { width: min(360px, 100%); display: flex; flex-direction: column; gap: 0.9rem; }
+.login h1 { text-align: center; }
+.app { max-width: 1000px; margin: 0 auto; padding: 1rem; }
+header { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+nav { display: flex; gap: 0.25rem; }
+nav button { border-color: transparent; background: none; }
+nav button.aktiv { background: var(--kort); border-color: var(--kant); font-weight: 600; }
+.bruker { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; color: var(--dempet); }
+.klokke { text-align: center; padding: 2rem 1rem; }
+.klokke .status { margin: 0 0 0.5rem; font-size: 1.1rem; }
+.klokke .teller { font-size: 3rem; font-weight: 600; margin: 0 0 1rem; font-variant-numeric: tabular-nums; }
+.klokke.inne { border-color: var(--inn); }
+button.stor { font-size: 1.4rem; font-weight: 600; padding: 1rem 3rem; border-radius: 999px; color: #fff; border: none; }
+button.stor.inn { background: var(--inn); }
+button.stor.ut { background: var(--ut); }
+.verktoy { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+.verktoy.wrap { flex-wrap: wrap; align-items: flex-end; margin-bottom: 0; }
+.hoyre-auto { margin-left: auto; }
+.sum { color: var(--dempet); }
+.tabell-wrap { overflow-x: auto; }
+.tabell { width: 100%; border-collapse: collapse; }
+.tabell.smal { max-width: 400px; }
+.tabell th { text-align: left; font-size: 0.8rem; color: var(--dempet); font-weight: 500; }
+.tabell th, .tabell td { padding: 0.5rem; border-bottom: 1px solid var(--kant); vertical-align: middle; }
+.tabell .hoyre { text-align: right; }
+.tabell tr.lopende td { background: var(--info-bg); }
+.tabell tr.venter td { background: var(--merke-bg); }
+.tabell tr.total td { font-weight: 600; border-bottom: none; }
+.tabell .kommentar { color: var(--dempet); max-width: 260px; }
+.endret { cursor: help; }
+.merke { background: var(--merke-bg); color: var(--merke-tekst); padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.8rem; }
+input.inline { border-color: transparent; background: none; padding: 0.25rem; width: 100%; }
+input.inline:focus { border-color: var(--kant); }
+.rediger-celle, .manuell { background: var(--bg); }
+.manuell { padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+.rediger-felt { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.rediger-felt .bred { flex: 1; min-width: 200px; }
+.knapper { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+@media (max-width: 640px) {
+  .app { padding: 0.75rem; }
+  .tabell { font-size: 0.85rem; }
+  .tabell th, .tabell td { padding: 0.4rem 0.25rem; }
+  .verktoy { flex-wrap: wrap; }
+  button.stor { width: 100%; }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="module">
+import { html, render, useState, useEffect, useCallback, useMemo } from 'https://cdn.jsdelivr.net/npm/htm@3.1.1/preact/standalone.module.js'
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm'
+
+// ---------- Konfigurasjon ----------
+// Publishable key er laget for å ligge i nettleseren; tilgang styres av RLS i databasen.
+const SUPABASE_URL = 'https://fvefrpvybfrjlocukzxz.supabase.co'
+const SUPABASE_KEY = 'sb_publishable_RpVCmUGPuI1VmcNxjoFYbw_2FKv5n1_'
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+// Adressen siden ligger på (fungerer både lokalt og på GitHub Pages under /repo/)
+const APP_URL = window.location.origin + window.location.pathname
+const FELTER = 'id, user_id, inn, ut, kommentar, endret, endret_av'
+const PROFIL_FELTER = 'id, navn, epost, rolle, aktiv'
+
+// ---------- Hjelpefunksjoner ----------
+const pad = (n) => String(n).padStart(2, '0')
+const datoStreng = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+const tidStreng = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`
+const klokke = (iso) => tidStreng(new Date(iso))
+const varighetMs = (inn, ut, naa = Date.now()) => (ut ? new Date(ut).getTime() : naa) - new Date(inn).getTime()
+function formaterVarighet(ms, sek = false) {
+  const s = Math.max(0, Math.floor(ms / 1000))
+  const t = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60)
+  return sek ? `${t}:${pad(m)}:${pad(s % 60)}` : `${t}:${pad(m)}`
+}
+function mandag(d) {
+  const r = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  r.setDate(r.getDate() - ((r.getDay() + 6) % 7))
+  return r
+}
+function leggTilDager(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r }
+function ukenummer(d) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+  t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7))
+  const start = new Date(Date.UTC(t.getUTCFullYear(), 0, 1))
+  return Math.ceil(((t - start) / 86400000 + 1) / 7)
+}
+const lokalInput = (iso) => (iso ? `${datoStreng(new Date(iso))}T${tidStreng(new Date(iso))}` : '')
+const fraLokalInput = (v) => (v ? new Date(v).toISOString() : null)
+const tilDato = (s) => new Date(`${s}T00:00`)
+const dagFormat = new Intl.DateTimeFormat('nb-NO', { weekday: 'short', day: 'numeric', month: 'short' })
+
+function useNaa() {
+  const [naa, setNaa] = useState(Date.now())
+  useEffect(() => { const t = setInterval(() => setNaa(Date.now()), 1000); return () => clearInterval(t) }, [])
+  return naa
+}
+
+// ---------- Excel ----------
+function lastScript(src) {
+  return new Promise((ok, feil) => {
+    const s = document.createElement('script')
+    s.src = src; s.onload = ok; s.onerror = () => feil(new Error('Kunne ikke laste Excel-biblioteket'))
+    document.head.appendChild(s)
+  })
+}
+
+async function lastNedExcel(rader, profiler, fra, til) {
+  if (!window.ExcelJS) await lastScript('https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js')
+  const ExcelJS = window.ExcelJS
+  // ExcelJS skriver datoer som UTC: flytt lokal tid inn i UTC-feltene så Excel viser riktig klokkeslett
+  const xDato = (iso) => { const d = new Date(iso); return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds())) }
+  const timer = (ms) => Math.round((ms / 3600000) * 100) / 100
+  const navn = (id) => profiler.get(id)?.navn ?? 'Ukjent'
+  const epost = (id) => profiler.get(id)?.epost ?? ''
+  const avsluttede = rader.filter((r) => r.ut)
+
+  const bok = new ExcelJS.Workbook()
+  bok.creator = 'Tidregistrering'
+  bok.created = new Date()
+
+  const sam = bok.addWorksheet('Sammendrag')
+  sam.columns = [
+    { header: 'Ansatt', key: 'navn', width: 28 },
+    { header: 'E-post', key: 'epost', width: 32 },
+    { header: 'Antall stemplinger', key: 'antall', width: 18 },
+    { header: 'Timer', key: 'timer', width: 12, style: { numFmt: '0.00' } },
+  ]
+  const per = new Map()
+  for (const r of avsluttede) {
+    const s = per.get(r.user_id) ?? { antall: 0, ms: 0 }
+    s.antall++; s.ms += varighetMs(r.inn, r.ut); per.set(r.user_id, s)
+  }
+  ;[...per.entries()].sort((a, b) => navn(a[0]).localeCompare(navn(b[0]), 'nb'))
+    .forEach(([id, s]) => sam.addRow({ navn: navn(id), epost: epost(id), antall: s.antall, timer: timer(s.ms) }))
+  sam.addRow({ navn: 'Totalt', antall: avsluttede.length, timer: timer(avsluttede.reduce((s, r) => s + varighetMs(r.inn, r.ut), 0)) }).font = { bold: true }
+
+  const det = bok.addWorksheet('Stemplinger')
+  det.columns = [
+    { header: 'Ansatt', key: 'navn', width: 28 },
+    { header: 'E-post', key: 'epost', width: 32 },
+    { header: 'Dato', key: 'dato', width: 12, style: { numFmt: 'dd.mm.yyyy' } },
+    { header: 'Inn', key: 'inn', width: 8, style: { numFmt: 'hh:mm' } },
+    { header: 'Ut', key: 'ut', width: 8, style: { numFmt: 'hh:mm' } },
+    { header: 'Timer', key: 'timer', width: 10, style: { numFmt: '0.00' } },
+    { header: 'Kommentar', key: 'kommentar', width: 40 },
+    { header: 'Endret manuelt', key: 'endret', width: 16 },
+  ]
+  ;[...avsluttede].sort((a, b) => navn(a.user_id).localeCompare(navn(b.user_id), 'nb') || a.inn.localeCompare(b.inn))
+    .forEach((r) => det.addRow({
+      navn: navn(r.user_id), epost: epost(r.user_id), dato: xDato(r.inn), inn: xDato(r.inn), ut: xDato(r.ut),
+      timer: timer(varighetMs(r.inn, r.ut)), kommentar: r.kommentar, endret: r.endret ? 'Ja' : '',
+    }))
+
+  for (const ark of [sam, det]) {
+    ark.getRow(1).font = { bold: true }
+    ark.views = [{ state: 'frozen', ySplit: 1 }]
+    ark.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: ark.columnCount } }
+  }
+
+  const buf = await bok.xlsx.writeBuffer()
+  const url = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
+  const a = document.createElement('a')
+  a.href = url; a.download = `timer_${datoStreng(fra)}_${datoStreng(til)}.xlsx`; a.click()
+  URL.revokeObjectURL(url)
+}
+
+// ---------- Innlogging ----------
+function Login() {
+  const [modus, setModus] = useState('inn')
+  const [navn, setNavn] = useState('')
+  const [epost, setEpost] = useState('')
+  const [passord, setPassord] = useState('')
+  const [melding, setMelding] = useState('')
+  const [feil, setFeil] = useState('')
+  const [jobber, setJobber] = useState(false)
+
+  const bytt = (m) => { setModus(m); setFeil(''); setMelding('') }
+
+  async function send(e) {
+    e.preventDefault()
+    setFeil(''); setMelding(''); setJobber(true)
+    if (modus === 'inn') {
+      const { error } = await supabase.auth.signInWithPassword({ email: epost, password: passord })
+      if (error) setFeil(error.message === 'Invalid login credentials' ? 'Feil e-post eller passord.' : error.message)
+    } else if (modus === 'ny') {
+      const { data, error } = await supabase.auth.signUp({
+        email: epost, password: passord,
+        options: { emailRedirectTo: APP_URL, data: { navn: navn.trim() } },
+      })
+      if (error) setFeil(error.message)
+      else if (!data.session) setMelding('Sjekk e-posten din og bekreft kontoen. Deretter må admin godkjenne deg.')
+    } else {
+      const { error } = await supabase.auth.resetPasswordForEmail(epost, { redirectTo: APP_URL })
+      if (error) setFeil(error.message)
+      else setMelding('Hvis e-posten finnes, har vi sendt deg en lenke for å lage nytt passord.')
+    }
+    setJobber(false)
+  }
+
+  return html`
+    <div class="sentrert">
+      <form class="kort login" onSubmit=${send}>
+        <h1>⏱ Tidregistrering</h1>
+        ${modus === 'glemt' && html`<p class="hjelp">Skriv e-posten din, så sender vi en lenke for å lage nytt passord.</p>`}
+        ${modus === 'ny' && html`
+          <label>Fullt navn <input required value=${navn} onInput=${(e) => setNavn(e.target.value)} /></label>`}
+        <label>E-post
+          <input type="email" required autofocus value=${epost} onInput=${(e) => setEpost(e.target.value)} />
+        </label>
+        ${modus !== 'glemt' && html`
+          <label>Passord
+            <input type="password" required minlength="6" value=${passord} onInput=${(e) => setPassord(e.target.value)} />
+          </label>`}
+        ${feil && html`<p class="feil">${feil}</p>`}
+        ${melding && html`<p class="info">${melding}</p>`}
+        <button class="primaer" disabled=${jobber}>${{ inn: 'Logg inn', ny: 'Opprett konto', glemt: 'Send lenke' }[modus]}</button>
+        ${modus === 'inn' && html`<button type="button" class="lenke" onClick=${() => bytt('glemt')}>Glemt passord?</button>`}
+        <button type="button" class="lenke" onClick=${() => bytt(modus === 'inn' ? 'ny' : 'inn')}>
+          ${modus === 'inn' ? 'Ny bruker? Opprett konto' : 'Tilbake til innlogging'}
+        </button>
+      </form>
+    </div>`
+}
+
+function NyttPassord({ ferdig }) {
+  const [passord, setPassord] = useState('')
+  const [gjenta, setGjenta] = useState('')
+  const [feil, setFeil] = useState('')
+  const [jobber, setJobber] = useState(false)
+
+  async function lagre(e) {
+    e.preventDefault()
+    if (passord !== gjenta) return setFeil('Passordene er ikke like.')
+    setJobber(true)
+    const { error } = await supabase.auth.updateUser({ password: passord })
+    setJobber(false)
+    if (error) setFeil(error.message)
+    else ferdig()
+  }
+
+  return html`
+    <div class="sentrert">
+      <form class="kort login" onSubmit=${lagre}>
+        <h1>Lag nytt passord</h1>
+        <label>Nytt passord
+          <input type="password" required minlength="6" autofocus value=${passord} onInput=${(e) => setPassord(e.target.value)} />
+        </label>
+        <label>Gjenta passord
+          <input type="password" required minlength="6" value=${gjenta} onInput=${(e) => setGjenta(e.target.value)} />
+        </label>
+        ${feil && html`<p class="feil">${feil}</p>`}
+        <button class="primaer" disabled=${jobber}>Lagre passord</button>
+      </form>
+    </div>`
+}
+
+// ---------- Tabell med stemplinger ----------
+function StemplingTabell({ rader, profiler, kanSlette, naa, onEndret }) {
+  const [redigerer, setRedigerer] = useState(null)
+  if (rader.length === 0) return html`<p class="tom">Ingen stemplinger i perioden.</p>`
+  const kolonner = profiler ? 7 : 6
+
+  return html`
+    <div class="tabell-wrap"><table class="tabell">
+      <thead><tr>
+        ${profiler && html`<th>Ansatt</th>`}
+        <th>Dato</th><th>Inn</th><th>Ut</th><th class="hoyre">Timer</th><th>Kommentar</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${rader.map((r) => redigerer === r.id
+          ? html`<${RedigerRad} key=${r.id} rad=${r} kolonner=${kolonner} kanSlette=${kanSlette}
+                  ferdig=${(endret) => { setRedigerer(null); if (endret) onEndret() }} />`
+          : html`
+            <tr key=${r.id} class=${r.ut ? '' : 'lopende'}>
+              ${profiler && html`<td>${profiler.get(r.user_id)?.navn ?? '?'}</td>`}
+              <td>${dagFormat.format(new Date(r.inn))}</td>
+              <td>${klokke(r.inn)}</td>
+              <td>${r.ut ? klokke(r.ut) : html`<span class="merke">inne nå</span>`}</td>
+              <td class="hoyre tall">${formaterVarighet(varighetMs(r.inn, r.ut, naa))}</td>
+              <td class="kommentar">
+                ${r.kommentar}
+                ${r.endret && html` <span class="endret" title=${'Endret ' + new Date(r.endret).toLocaleString('nb-NO')}>✎</span>`}
+              </td>
+              <td class="hoyre"><button class="lenke" onClick=${() => setRedigerer(r.id)}>Rediger</button></td>
+            </tr>`)}
+      </tbody>
+    </table></div>`
+}
+
+function RedigerRad({ rad, kolonner, kanSlette, ferdig }) {
+  const [inn, setInn] = useState(lokalInput(rad.inn))
+  const [ut, setUt] = useState(lokalInput(rad.ut))
+  const [kommentar, setKommentar] = useState(rad.kommentar)
+  const [feil, setFeil] = useState('')
+
+  async function lagre() {
+    const innIso = fraLokalInput(inn), utIso = fraLokalInput(ut)
+    if (!innIso) return setFeil('Inn-tid mangler')
+    if (utIso && utIso < innIso) return setFeil('Ut må være etter inn')
+    const { error } = await supabase.from('stemplinger').update({ inn: innIso, ut: utIso, kommentar }).eq('id', rad.id)
+    if (error) setFeil(error.message); else ferdig(true)
+  }
+  async function slett() {
+    if (!confirm('Slette denne stemplingen?')) return
+    const { error } = await supabase.from('stemplinger').delete().eq('id', rad.id)
+    if (error) setFeil(error.message); else ferdig(true)
+  }
+
+  return html`
+    <tr><td colspan=${kolonner} class="rediger-celle">
+      <div class="rediger-felt">
+        <label>Inn <input type="datetime-local" value=${inn} onInput=${(e) => setInn(e.target.value)} /></label>
+        <label>Ut <input type="datetime-local" value=${ut} onInput=${(e) => setUt(e.target.value)} /></label>
+        <label class="bred">Kommentar <input value=${kommentar} onInput=${(e) => setKommentar(e.target.value)} /></label>
+      </div>
+      ${feil && html`<p class="feil">${feil}</p>`}
+      <div class="knapper">
+        <button class="primaer" onClick=${lagre}>Lagre</button>
+        <button onClick=${() => ferdig(false)}>Avbryt</button>
+        ${kanSlette && html`<button class="fare" onClick=${slett}>Slett</button>`}
+      </div>
+    </td></tr>`
+}
+
+function ManuellForing({ brukerId, ferdig }) {
+  const start = new Date(); start.setHours(8, 0, 0, 0)
+  const [inn, setInn] = useState(lokalInput(start.toISOString()))
+  const [ut, setUt] = useState(lokalInput(new Date(start.getTime() + 7.5 * 3600000).toISOString()))
+  const [kommentar, setKommentar] = useState('')
+  const [feil, setFeil] = useState('')
+
+  async function lagre() {
+    const innIso = fraLokalInput(inn), utIso = fraLokalInput(ut)
+    if (!innIso || !utIso) return setFeil('Fyll inn både inn og ut')
+    if (utIso < innIso) return setFeil('Ut må være etter inn')
+    const { error } = await supabase.from('stemplinger').insert({ user_id: brukerId, inn: innIso, ut: utIso, kommentar })
+    if (error) setFeil(error.message); else ferdig()
+  }
+
+  return html`
+    <div class="manuell">
+      <div class="rediger-felt">
+        <label>Inn <input type="datetime-local" value=${inn} onInput=${(e) => setInn(e.target.value)} /></label>
+        <label>Ut <input type="datetime-local" value=${ut} onInput=${(e) => setUt(e.target.value)} /></label>
+        <label class="bred">Kommentar
+          <input value=${kommentar} placeholder="F.eks. glemte å stemple" onInput=${(e) => setKommentar(e.target.value)} />
+        </label>
+      </div>
+      ${feil && html`<p class="feil">${feil}</p>`}
+      <div class="knapper">
+        <button class="primaer" onClick=${lagre}>Lagre</button>
+        <button onClick=${ferdig}>Avbryt</button>
+      </div>
+    </div>`
+}
+
+// ---------- Ansatt: stemple inn/ut ----------
+function MineTimer({ profil }) {
+  const [uke, setUke] = useState(() => mandag(new Date()))
+  const [rader, setRader] = useState([])
+  const [apen, setApen] = useState(null)
+  const [feil, setFeil] = useState('')
+  const [jobber, setJobber] = useState(false)
+  const [visManuell, setVisManuell] = useState(false)
+  const naa = useNaa()
+
+  const last = useCallback(async () => {
+    const [liste, inne] = await Promise.all([
+      supabase.from('stemplinger').select(FELTER).eq('user_id', profil.id)
+        .gte('inn', uke.toISOString()).lt('inn', leggTilDager(uke, 7).toISOString())
+        .order('inn', { ascending: false }),
+      supabase.from('stemplinger').select(FELTER).eq('user_id', profil.id).is('ut', null).maybeSingle(),
+    ])
+    const e = liste.error ?? inne.error
+    setFeil(e ? e.message : '')
+    setRader(liste.data ?? [])
+    setApen(inne.data)
+  }, [profil.id, uke])
+
+  useEffect(() => { last() }, [last])
+
+  async function stemple() {
+    setJobber(true)
+    const { error } = apen
+      ? await supabase.from('stemplinger').update({ ut: new Date().toISOString() }).eq('id', apen.id)
+      : await supabase.from('stemplinger').insert({ user_id: profil.id })
+    if (error) setFeil(error.message)
+    await last()
+    setJobber(false)
+  }
+
+  const sum = rader.reduce((s, r) => s + varighetMs(r.inn, r.ut, naa), 0)
+  const denneUka = mandag(new Date()).getTime() === uke.getTime()
+
+  return html`
+    <div class="stack">
+      <section class=${'kort klokke' + (apen ? ' inne' : '')}>
+        <p class="status">${apen ? `Stemplet inn kl. ${klokke(apen.inn)}` : 'Du er stemplet ut'}</p>
+        ${apen && html`<p class="teller">${formaterVarighet(varighetMs(apen.inn, null, naa), true)}</p>`}
+        <button class=${'stor ' + (apen ? 'ut' : 'inn')} onClick=${stemple} disabled=${jobber}>
+          ${apen ? 'Stemple ut' : 'Stemple inn'}
+        </button>
+        ${feil && html`<p class="feil">${feil}</p>`}
+      </section>
+
+      <section class="kort">
+        <div class="verktoy">
+          <button aria-label="Forrige uke" onClick=${() => setUke(leggTilDager(uke, -7))}>←</button>
+          <h2>Uke ${ukenummer(uke)} ${!denneUka && html`<small>(${uke.toLocaleDateString('nb-NO')})</small>`}</h2>
+          <button aria-label="Neste uke" disabled=${denneUka} onClick=${() => setUke(leggTilDager(uke, 7))}>→</button>
+          <span class="sum">Sum: <strong class="tall">${formaterVarighet(sum)}</strong></span>
+          <button class="hoyre-auto" onClick=${() => setVisManuell(!visManuell)}>+ Legg til manuelt</button>
+        </div>
+        ${visManuell && html`<${ManuellForing} brukerId=${profil.id} ferdig=${() => { setVisManuell(false); last() }} />`}
+        <${StemplingTabell} rader=${rader} naa=${naa} onEndret=${last} />
+      </section>
+    </div>`
+}
+
+// ---------- Admin: oversikt og Excel ----------
+function forhandsvalg() {
+  const idag = new Date(), m = mandag(idag)
+  const forste = new Date(idag.getFullYear(), idag.getMonth(), 1)
+  const p = (fra, til) => ({ fra: datoStreng(fra), til: datoStreng(til) })
+  return [
+    ['Denne uka', () => p(m, leggTilDager(m, 6))],
+    ['Forrige uke', () => p(leggTilDager(m, -7), leggTilDager(m, -1))],
+    ['Denne måneden', () => p(forste, new Date(idag.getFullYear(), idag.getMonth() + 1, 0))],
+    ['Forrige måned', () => p(new Date(idag.getFullYear(), idag.getMonth() - 1, 1), leggTilDager(forste, -1))],
+  ]
+}
+
+function Oversikt() {
+  const valg = useMemo(forhandsvalg, [])
+  const [periode, setPeriode] = useState(() => valg[2][1]())
+  const [ansatt, setAnsatt] = useState('')
+  const [profiler, setProfiler] = useState([])
+  const [rader, setRader] = useState([])
+  const [feil, setFeil] = useState('')
+  const [leggTilFor, setLeggTilFor] = useState('')
+  const [lagerExcel, setLagerExcel] = useState(false)
+  const naa = useNaa()
+
+  const profilMap = useMemo(() => new Map(profiler.map((p) => [p.id, p])), [profiler])
+
+  const last = useCallback(async () => {
+    let q = supabase.from('stemplinger').select(FELTER)
+      .gte('inn', tilDato(periode.fra).toISOString())
+      .lt('inn', leggTilDager(tilDato(periode.til), 1).toISOString())
+      .order('inn', { ascending: false }).limit(5000)
+    if (ansatt) q = q.eq('user_id', ansatt)
+    const [s, p] = await Promise.all([q, supabase.from('profiler').select(PROFIL_FELTER).order('navn')])
+    const e = s.error ?? p.error
+    setFeil(e ? e.message : '')
+    setRader(s.data ?? [])
+    setProfiler(p.data ?? [])
+  }, [periode, ansatt])
+
+  useEffect(() => { last() }, [last])
+
+  const perAnsatt = useMemo(() => {
+    const m = new Map()
+    for (const r of rader) m.set(r.user_id, (m.get(r.user_id) ?? 0) + varighetMs(r.inn, r.ut, naa))
+    return [...m.entries()].sort((a, b) => (profilMap.get(a[0])?.navn ?? '').localeCompare(profilMap.get(b[0])?.navn ?? '', 'nb'))
+  }, [rader, naa, profilMap])
+
+  const total = perAnsatt.reduce((s, [, ms]) => s + ms, 0)
+  const inneNa = rader.filter((r) => !r.ut)
+
+  async function excel() {
+    setLagerExcel(true)
+    try { await lastNedExcel(rader, profilMap, tilDato(periode.fra), tilDato(periode.til)) }
+    catch (e) { setFeil(e.message) }
+    setLagerExcel(false)
+  }
+
+  return html`
+    <div class="stack">
+      <section class="kort">
+        <div class="verktoy wrap">
+          ${valg.map(([tekst, f]) => html`<button key=${tekst} onClick=${() => setPeriode(f())}>${tekst}</button>`)}
+          <label>Fra <input type="date" value=${periode.fra} onInput=${(e) => setPeriode({ ...periode, fra: e.target.value })} /></label>
+          <label>Til <input type="date" value=${periode.til} onInput=${(e) => setPeriode({ ...periode, til: e.target.value })} /></label>
+          <label>Ansatt
+            <select value=${ansatt} onChange=${(e) => setAnsatt(e.target.value)}>
+              <option value="">Alle</option>
+              ${profiler.map((p) => html`<option key=${p.id} value=${p.id}>${p.navn}</option>`)}
+            </select>
+          </label>
+          <button class="primaer hoyre-auto" disabled=${rader.length === 0 || lagerExcel} onClick=${excel}>
+            ${lagerExcel ? 'Lager fil…' : '⬇ Last ned Excel'}
+          </button>
+        </div>
+        ${inneNa.length > 0 && html`
+          <p class="info">Inne nå: ${inneNa.map((r) => profilMap.get(r.user_id)?.navn).join(', ')} (løpende stemplinger tas ikke med i Excel)</p>`}
+        ${feil && html`<p class="feil">${feil}</p>`}
+      </section>
+
+      <section class="kort">
+        <h2>Sum per ansatt</h2>
+        <table class="tabell smal"><tbody>
+          ${perAnsatt.map(([id, ms]) => html`
+            <tr key=${id}><td>${profilMap.get(id)?.navn ?? '?'}</td><td class="hoyre tall">${formaterVarighet(ms)}</td></tr>`)}
+          <tr class="total"><td>Totalt</td><td class="hoyre tall">${formaterVarighet(total)}</td></tr>
+        </tbody></table>
+      </section>
+
+      <section class="kort">
+        <div class="verktoy">
+          <h2>Stemplinger</h2>
+          <select class="hoyre-auto" value=${leggTilFor} onChange=${(e) => setLeggTilFor(e.target.value)}>
+            <option value="">+ Legg til for ansatt…</option>
+            ${profiler.map((p) => html`<option key=${p.id} value=${p.id}>${p.navn}</option>`)}
+          </select>
+        </div>
+        ${leggTilFor && html`<${ManuellForing} key=${leggTilFor} brukerId=${leggTilFor} ferdig=${() => { setLeggTilFor(''); last() }} />`}
+        <${StemplingTabell} rader=${rader} profiler=${profilMap} kanSlette=${true} naa=${naa} onEndret=${last} />
+      </section>
+    </div>`
+}
+
+// ---------- Admin: ansatte ----------
+function NavnFelt({ verdi, lagre }) {
+  const [v, setV] = useState(verdi)
+  useEffect(() => setV(verdi), [verdi])
+  return html`<input class="inline" value=${v} onInput=${(e) => setV(e.target.value)}
+    onBlur=${() => v.trim() && v !== verdi && lagre(v.trim())}
+    onKeyDown=${(e) => e.key === 'Enter' && e.currentTarget.blur()} />`
+}
+
+function Ansatte({ megId }) {
+  const [profiler, setProfiler] = useState([])
+  const [feil, setFeil] = useState('')
+
+  const last = useCallback(async () => {
+    const { data, error } = await supabase.from('profiler').select(PROFIL_FELTER).order('aktiv').order('navn')
+    setFeil(error ? error.message : '')
+    setProfiler(data ?? [])
+  }, [])
+
+  useEffect(() => { last() }, [last])
+
+  async function oppdater(id, endring) {
+    const { error } = await supabase.from('profiler').update(endring).eq('id', id)
+    if (error) setFeil(error.message)
+    last()
+  }
+
+  const venter = profiler.filter((p) => !p.aktiv).length
+
+  return html`
+    <section class="kort">
+      <h2>Ansatte</h2>
+      <p class="hjelp">
+        Ansatte oppretter konto selv på innloggingssiden («Ny bruker»). De må aktiveres her før de kan stemple.
+        ${venter > 0 && html`<strong> ${venter} venter på godkjenning.</strong>`}
+      </p>
+      ${feil && html`<p class="feil">${feil}</p>`}
+      <div class="tabell-wrap"><table class="tabell">
+        <thead><tr><th>Navn</th><th>E-post</th><th>Rolle</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          ${profiler.map((p) => {
+            const meg = p.id === megId
+            return html`
+              <tr key=${p.id} class=${p.aktiv ? '' : 'venter'}>
+                <td><${NavnFelt} verdi=${p.navn} lagre=${(navn) => oppdater(p.id, { navn })} /></td>
+                <td>${p.epost}</td>
+                <td>
+                  <select value=${p.rolle} disabled=${meg} onChange=${(e) => oppdater(p.id, { rolle: e.target.value })}>
+                    <option value="ansatt">Ansatt</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </td>
+                <td>${p.aktiv ? 'Aktiv' : html`<span class="merke">Venter</span>`}</td>
+                <td class="hoyre">
+                  ${!meg && (p.aktiv
+                    ? html`<button onClick=${() => oppdater(p.id, { aktiv: false })}>Deaktiver</button>`
+                    : html`<button class="primaer" onClick=${() => oppdater(p.id, { aktiv: true })}>Aktiver</button>`)}
+                </td>
+              </tr>`
+          })}
+        </tbody>
+      </table></div>
+    </section>`
+}
+
+// ---------- Hovedside ----------
+function Hoved({ brukerId }) {
+  const [profil, setProfil] = useState(null)
+  const [fane, setFane] = useState('mine')
+  const [feil, setFeil] = useState('')
+
+  const lastProfil = useCallback(async () => {
+    const { data, error } = await supabase.from('profiler').select(PROFIL_FELTER).eq('id', brukerId).single()
+    if (error) setFeil(error.message)
+    setProfil(data)
+  }, [brukerId])
+
+  useEffect(() => { lastProfil() }, [lastProfil])
+
+  if (!profil) return html`<div class="sentrert">${feil ? html`<p class="feil">${feil}</p>` : 'Laster…'}</div>`
+
+  const admin = profil.rolle === 'admin' && profil.aktiv
+  const faner = admin ? [['mine', 'Stemple'], ['oversikt', 'Oversikt'], ['ansatte', 'Ansatte']] : []
+
+  let innhold
+  if (!profil.aktiv) innhold = html`
+    <div class="kort">
+      <h2>Venter på godkjenning</h2>
+      <p>Kontoen din er opprettet. En administrator må aktivere deg før du kan stemple.</p>
+      <button onClick=${lastProfil}>Sjekk igjen</button>
+    </div>`
+  else if (fane === 'mine' || !admin) innhold = html`<${MineTimer} profil=${profil} />`
+  else if (fane === 'oversikt') innhold = html`<${Oversikt} />`
+  else innhold = html`<${Ansatte} megId=${profil.id} />`
+
+  return html`
+    <div class="app">
+      <header>
+        <h1>⏱ Tid</h1>
+        ${faner.length > 0 && html`
+          <nav>${faner.map(([f, tekst]) => html`
+            <button key=${f} class=${fane === f ? 'aktiv' : ''} onClick=${() => setFane(f)}>${tekst}</button>`)}
+          </nav>`}
+        <div class="bruker">
+          <span>${profil.navn}${admin && html`<em> (admin)</em>`}</span>
+          <button class="lenke" onClick=${() => supabase.auth.signOut()}>Logg ut</button>
+        </div>
+      </header>
+      <main>${innhold}</main>
+    </div>`
+}
+
+function App() {
+  const [session, setSession] = useState(null)
+  const [laster, setLaster] = useState(true)
+  const [nyttPassord, setNyttPassord] = useState(false)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => { setSession(data.session); setLaster(false) })
+    const { data } = supabase.auth.onAuthStateChange((e, s) => {
+      if (e === 'PASSWORD_RECOVERY') setNyttPassord(true)
+      setSession(s)
+    })
+    return () => data.subscription.unsubscribe()
+  }, [])
+
+  if (laster) return html`<div class="sentrert">Laster…</div>`
+  if (session && nyttPassord) return html`<${NyttPassord} ferdig=${() => setNyttPassord(false)} />`
+  if (!session) return html`<${Login} />`
+  return html`<${Hoved} key=${session.user.id} brukerId=${session.user.id} />`
+}
+
+render(html`<${App} />`, document.getElementById('root'))
+</script>
+</body>
+</html>
