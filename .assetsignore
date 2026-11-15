@@ -6,3 +6,5 @@
 supabase
 README.md
 wrangler.jsonc
+*.docx
+*.pdf

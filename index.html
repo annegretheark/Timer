@@ -2,8 +2,16 @@
 <html lang="no">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Tidregistrering</title>
+<!-- Hjemskjermapp: eget ikon, fullskjerm og egen lagring (holder innloggingen) -->
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="apple-touch-icon" href="/ikoner/apple-touch-icon.png" />
+<meta name="theme-color" content="#2563eb" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Tid" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏱</text></svg>" />
 <style>
 :root {
@@ -46,12 +54,21 @@ label input, label select { color: var(--tekst); }
 .tall { font-variant-numeric: tabular-nums; }
 .login { width: min(360px, 100%); display: flex; flex-direction: column; gap: 0.9rem; }
 .login h1 { text-align: center; }
-.app { max-width: 1000px; margin: 0 auto; padding: 1rem; }
+.app { max-width: 1000px; margin: 0 auto; padding: 1rem; padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
 header { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
 nav { display: flex; gap: 0.25rem; }
 nav button { border-color: transparent; background: none; }
 nav button.aktiv { background: var(--kort); border-color: var(--kant); font-weight: 600; }
 .bruker { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; color: var(--dempet); }
+/* Brukermeny: Logg ut ligger her, så ingen logger seg ut ved et uhell */
+.meny { position: relative; }
+.meny > summary { list-style: none; cursor: pointer; border: 1px solid var(--kant); border-radius: 999px; padding: 0.35rem 0.8rem; background: var(--kort); color: var(--tekst); display: flex; align-items: center; gap: 0.4rem; }
+.meny > summary::-webkit-details-marker { display: none; }
+.meny-panel { position: absolute; right: 0; top: calc(100% + 6px); background: var(--kort); border: 1px solid var(--kant); border-radius: 10px; padding: 0.75rem; min-width: 220px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 20; display: flex; flex-direction: column; gap: 0.5rem; }
+.meny-panel .navn { font-weight: 600; color: var(--tekst); }
+.meny-panel .epost { font-size: 0.85rem; color: var(--dempet); word-break: break-all; }
+.installer { display: flex; gap: 0.75rem; align-items: center; justify-content: space-between; background: var(--info-bg); border-radius: 8px; padding: 0.6rem 0.8rem; margin-bottom: 1rem; font-size: 0.9rem; }
+.installer button { flex-shrink: 0; }
 .klokke { text-align: center; padding: 2rem 1rem; }
 .klokke .status { margin: 0 0 0.5rem; font-size: 1.1rem; }
 .klokke .teller { font-size: 3rem; font-weight: 600; margin: 0 0 1rem; font-variant-numeric: tabular-nums; }
@@ -670,12 +687,64 @@ function Hoved({ brukerId }) {
             <button key=${f} class=${fane === f ? 'aktiv' : ''} onClick=${() => setFane(f)}>${tekst}</button>`)}
           </nav>`}
         <div class="bruker">
-          <span>${profil.navn}${admin && html`<em> (admin)</em>`}</span>
-          <button class="lenke" onClick=${() => supabase.auth.signOut()}>Logg ut</button>
+          <details class="meny">
+            <summary aria-label="Brukermeny">👤 <span>${forNavn(profil.navn)}</span></summary>
+            <div class="meny-panel">
+              <span class="navn">${profil.navn}${admin && html` <em>(admin)</em>`}</span>
+              <span class="epost">${profil.epost}</span>
+              <button class="fare" onClick=${loggUt}>Logg ut</button>
+            </div>
+          </details>
         </div>
       </header>
+      <${InstallerTips} />
       <main>${innhold}</main>
     </div>`
+}
+
+// ---------- Hjemskjermapp ----------
+const forNavn = (navn) => String(navn || '').trim().split(/\s+/)[0] || 'Meg'
+
+function loggUt() {
+  if (confirm('Vil du logge ut? Du må logge inn igjen neste gang du åpner appen.')) supabase.auth.signOut()
+}
+
+const erInstallert = () =>
+  window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true
+const erIphone = () => /iphone|ipad|ipod/i.test(navigator.userAgent)
+const erMobil = () => /android|iphone|ipad|ipod/i.test(navigator.userAgent)
+
+// Viser et lite tips på mobil om å legge appen på hjemskjermen (kan lukkes).
+function InstallerTips() {
+  const [skjult, setSkjult] = useState(() => {
+    try { return localStorage.getItem('tid_skjul_installer') === '1' } catch { return false }
+  })
+  const [prompt, setPrompt] = useState(null)
+
+  useEffect(() => {
+    const fang = (e) => { e.preventDefault(); setPrompt(e) }
+    window.addEventListener('beforeinstallprompt', fang)
+    return () => window.removeEventListener('beforeinstallprompt', fang)
+  }, [])
+
+  if (skjult || erInstallert() || !erMobil()) return null
+  const lukk = () => { try { localStorage.setItem('tid_skjul_installer', '1') } catch {} ; setSkjult(true) }
+
+  const tekst = erIphone()
+    ? html`Legg appen på hjemskjermen: trykk <strong>Del</strong> <span aria-hidden="true">⬆︎</span> og velg <strong>Legg til på Hjem-skjerm</strong>. Da holder du deg innlogget.`
+    : html`Legg appen på hjemskjermen, så åpner den som en vanlig app og du holder deg innlogget.`
+
+  return html`
+    <div class="installer">
+      <span>${tekst}</span>
+      ${prompt
+        ? html`<button class="primaer" onClick=${async () => { prompt.prompt(); await prompt.userChoice; setPrompt(null); lukk() }}>Installer</button>`
+        : html`<button class="lenke" onClick=${lukk} aria-label="Lukk">✕</button>`}
+    </div>`
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}))
 }
 
 function App() {

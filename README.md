@@ -31,3 +31,9 @@ npx wrangler@4 deploy
 ```
 `wrangler.jsonc` og `.assetsignore` sørger for at bare `index.html` legges ut.
 Husk å legge adressen inn i Supabase under Site URL / Redirect URLs.
+
+## Hjemskjermapp (mobil)
+`manifest.webmanifest`, `sw.js` og `ikoner/` gjør at appen kan legges på hjemskjermen og åpnes i
+fullskjerm. Innloggingen huskes på enheten til brukeren selv logger ut (Logg ut ligger i brukermenyen).
+På iPhone må appen legges på hjemskjermen for at Safari ikke skal slette innloggingen etter 7 dager.
+Service workeren henter alltid nyeste versjon fra nettet og bruker bare lagret kopi hvis nettet er nede.
